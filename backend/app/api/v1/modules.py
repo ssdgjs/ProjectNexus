@@ -2,12 +2,42 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
+from datetime import datetime
 from app.db.session import get_db
-from app.schemas import ModuleCreate, ModuleUpdate, ModuleResponse, ModuleAssignRequest
-from app.models import Module, ModuleAssignee, User
+from app.schemas import ModuleCreate, ModuleUpdate, ModuleResponse
+from app.models import Module, ModuleAssignee, User, Project, Delivery, Review
 from app.core.deps import get_current_user, get_current_commander
 
 router = APIRouter()
+
+
+@router.post("/check-timeouts")
+async def check_timeouts(
+    current_user: User = Depends(get_current_commander),
+    db: AsyncSession = Depends(get_db)
+):
+    """检查并更新所有超时模块（仅指挥官）"""
+    now = datetime.utcnow()
+
+    # 查找所有有截止日期且未完成的模块
+    result = await db.execute(
+        select(Module).where(
+            Module.deadline.isnot(None),
+            Module.status.in_(["open", "in_progress"]),
+            Module.is_timeout == False
+        )
+    )
+    modules = result.scalars().all()
+
+    timeout_count = 0
+    for module in modules:
+        if module.deadline and module.deadline < now:
+            module.is_timeout = True
+            timeout_count += 1
+
+    await db.commit()
+
+    return {"message": f"检查完成，发现 {timeout_count} 个超时模块"}
 
 
 @router.post("/", response_model=ModuleResponse, status_code=status.HTTP_201_CREATED)
@@ -30,7 +60,7 @@ async def create_module(
     await db.commit()
     await db.refresh(new_module)
 
-    return ModuleResponse.model_validate(new_module)
+    return await _get_module_response(new_module, db)
 
 
 @router.get("/", response_model=List[ModuleResponse])
@@ -51,7 +81,12 @@ async def list_modules(
     result = await db.execute(query)
     modules = result.scalars().all()
 
-    return [ModuleResponse.model_validate(m) for m in modules]
+    responses = []
+    for module in modules:
+        response = await _get_module_response(module, db)
+        responses.append(response)
+
+    return responses
 
 
 @router.get("/{module_id}", response_model=ModuleResponse)
@@ -70,7 +105,71 @@ async def get_module(
             detail="模块不存在"
         )
 
-    return ModuleResponse.model_validate(module)
+    return await _get_module_response(module, db)
+
+
+async def _get_module_response(module: Module, db: AsyncSession) -> ModuleResponse:
+    """构建完整的模块响应"""
+    # Get project name
+    project_result = await db.execute(select(Project).where(Project.id == module.project_id))
+    project = project_result.scalar_one_or_none()
+
+    # Get assignees
+    assignees_result = await db.execute(
+        select(ModuleAssignee, User)
+        .join(User, ModuleAssignee.user_id == User.id)
+        .where(ModuleAssignee.module_id == module.id)
+    )
+    assignees_data = assignees_result.all()
+
+    # Get deliveries with reviews
+    deliveries_result = await db.execute(
+        select(Delivery, Review, User)
+        .outerjoin(Review, Delivery.id == Review.delivery_id)
+        .join(User, Delivery.submitter_id == User.id)
+        .where(Delivery.module_id == module.id)
+    )
+    deliveries_data = deliveries_result.all()
+
+    from app.schemas.module import ModuleAssigneeInfo, DeliveryInfo
+
+    assignees = [
+        ModuleAssigneeInfo(
+            id=assignee.id,
+            user_id=assignee.user_id,
+            username=user.username,
+            role=user.role,
+            allocated_score=assignee.allocated_score
+        )
+        for assignee, user in assignees_data
+    ]
+
+    deliveries = [
+        DeliveryInfo(
+            id=delivery.id,
+            content=delivery.content,
+            submitter_name=user.username,
+            review_decision=review.decision if review else None,
+            created_at=delivery.submitted_at
+        )
+        for delivery, review, user in deliveries_data
+    ]
+
+    return ModuleResponse(
+        id=module.id,
+        project_id=module.project_id,
+        project_name=project.name if project else None,
+        status=module.status,
+        is_timeout=module.is_timeout,
+        created_at=module.created_at,
+        updated_at=module.updated_at,
+        title=module.title,
+        description=module.description,
+        deadline=module.deadline,
+        bounty=module.bounty,
+        assignees=assignees,
+        deliveries=deliveries
+    )
 
 
 @router.post("/{module_id}/assign", status_code=status.HTTP_201_CREATED)
@@ -176,4 +275,4 @@ async def update_module(
     await db.commit()
     await db.refresh(module)
 
-    return ModuleResponse.model_validate(module)
+    return await _get_module_response(module, db)

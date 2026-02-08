@@ -2,6 +2,7 @@ from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 from app.schemas.module import ModuleCreate, ModuleUpdate, ModuleResponse, ModuleAssignRequest, ModuleAssigneeResponse
 from app.schemas.delivery import DeliveryCreate, DeliveryResponse
+from app.schemas.review import ReviewCreate, ReviewResponse
 
 __all__ = [
     "UserCreate",
@@ -18,4 +19,6 @@ __all__ = [
     "ModuleAssigneeResponse",
     "DeliveryCreate",
     "DeliveryResponse",
+    "ReviewCreate",
+    "ReviewResponse",
 ]

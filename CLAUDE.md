@@ -10,13 +10,20 @@ The vision is to create a "managerless" organization system where AI serves as t
 
 ## Current State
 
-- **Status**: Planning phase (no code written yet)
+- **Status**: **Phase 1 Implementation in Progress** - Authentication, Projects, Modules, and Delivery Submission features completed
 - **Documentation**: `PRD.md` contains the complete product requirements (in Chinese)
-- **Architecture**: Planned to be a monolithic application with:
+- **Architecture**: Monolithic application with:
   - Backend: Python + FastAPI + SQLAlchemy
-  - Frontend: React + Lingjing Core Brand System
-  - Database: PostgreSQL
-  - Deployment: Docker + Tencent Cloud
+  - Frontend: React + TypeScript + Tailwind CSS
+  - Database: SQLite (development), PostgreSQL (production planned)
+  - Deployment: Docker Compose (planned)
+- **Implemented Features**:
+  - ✅ JWT Authentication system (Commander/Node roles)
+  - ✅ Project management (CRUD)
+  - ✅ Module management with grab-style assignment
+  - ✅ Multi-attachment delivery submission
+  - ✅ Notification system
+  - 🚧 Acceptance/Review flow (in progress)
 
 ## Planned Tech Stack
 
@@ -192,3 +199,272 @@ Events that trigger in-app notifications:
 ## Language Note
 
 This project is **Chinese-first**. The PRD and UI are entirely in Chinese. All user-facing text should be in Chinese.
+
+---
+
+# Development Log & Technical Decisions
+
+This section documents key development experiences, technical challenges, and solutions for future reference.
+
+## Phase 1 Implementation Progress (Feb 2025)
+
+### Completed Features
+
+#### 1. Authentication System ✅
+- **Backend**: JWT-based auth with role-based access control (RBAC)
+- **Frontend**: Login/register forms with auth state management (Zustand)
+- **Roles**: Commander (指挥官) and Node (节点)
+- **Files**:
+  - `backend/app/api/v1/auth.py`
+  - `backend/app/core/deps.py` (dependency injection for auth)
+  - `frontend/src/store/authStore.ts`
+  - `frontend/src/components/auth/LoginForm.tsx`
+
+#### 2. Project Management ✅
+- CRUD operations for projects
+- Commander-only creation permissions
+- Project status tracking (planning, in_progress, completed, archived)
+- **Files**: `backend/app/api/v1/projects.py`, `frontend/src/pages/ProjectsPage.tsx`
+
+#### 3. Module Management ✅
+- Module creation with project association
+- Grab-style task assignment (first-come-first-served)
+- Concurrency limit enforcement (max 3 tasks per node)
+- Multi-person collaboration support (max 5 per module)
+- **Files**: `backend/app/api/v1/modules.py`, `frontend/src/pages/ModulesPage.tsx`
+
+#### 4. Multi-Attachment Delivery Submission ✅
+- Support for multiple named attachments (name + URL pairs)
+- Dynamic add/remove attachment entries in UI
+- JSON storage in database for flexibility
+- **Files**:
+  - `backend/app/api/v1/deliveries.py`
+  - `backend/app/models/delivery.py`
+  - `backend/app/schemas/delivery.py`
+  - `frontend/src/components/modules/DeliverySubmissionModal.tsx`
+
+---
+
+## Technical Challenges & Solutions
+
+### Challenge 1: React Hook Form + Select Element Type Mismatch
+
+**Problem**:
+```typescript
+// HTML select elements return strings, but backend expects numbers
+<select {...register('project_id')}>
+  <option value="1">Project A</option>  // value is string "1", not number 1
+</select>
+```
+
+**Solution**:
+Use `valueAsNumber: true` in register options:
+```typescript
+<select {...register('project_id', { valueAsNumber: true })}>
+```
+
+**Location**: `frontend/src/pages/ModulesPage.tsx:54-55`
+
+---
+
+### Challenge 2: React Hook Form + Custom Input Component Render Prop
+
+**Problem**:
+When using Input component's `render` prop with `register`, the field object wasn't properly bound to the rendered element:
+```tsx
+<Input
+  {...register('content')}
+  render={({ field }) => <textarea {...field} />}  // field props not applied correctly
+/>
+```
+
+**Solution**:
+Simplify by directly using register without the render prop:
+```tsx
+<label>交付内容</label>
+<textarea
+  {...register('content', { required: '请输入交付内容' })}
+  rows={6}
+  className="..."
+/>
+{errors.content && <p className="error">{errors.content.message}</p>}
+```
+
+**Location**: `frontend/src/components/modules/DeliverySubmissionModal.tsx:94-107`
+
+---
+
+### Challenge 3: SQLAlchemy JSON Serialization of Pydantic Models
+
+**Problem**:
+```python
+# Pydantic models can't be directly stored in SQLAlchemy JSON columns
+new_delivery = Delivery(
+    attachments=delivery_data.attachments  # List[AttachmentItem] - Pydantic models
+)
+await db.commit()  # ERROR: Object of type AttachmentItem is not JSON serializable
+```
+
+**Solution**:
+Convert Pydantic models to plain dicts before database insertion:
+```python
+# Convert Pydantic models to dicts for JSON serialization
+attachments_data = None
+if delivery_data.attachments:
+    attachments_data = [
+        {"name": item.name, "url": item.url}
+        for item in delivery_data.attachments
+    ]
+
+new_delivery = Delivery(
+    attachments=attachments_data  # Plain list of dicts
+)
+```
+
+**Location**: `backend/app/api/v1/deliveries.py:58-71`
+
+---
+
+### Challenge 4: TypeScript Type Definition Mismatch in Mutation Hooks
+
+**Problem**:
+```typescript
+// useSubmitDelivery type didn't include 'attachments' field
+mutationFn: (data: { module_id: number; content: string; attachment_url?: string }) =>
+  deliveriesApi.submit(data)
+// But component was passing: { module_id, content, attachments }
+```
+
+**Solution**:
+Update type definition to match actual usage:
+```typescript
+mutationFn: (data: {
+  module_id: number
+  content: string
+  attachment_url?: string
+  attachments?: Array<{ name: string; url: string }>
+}) => deliveriesApi.submit(data)
+```
+
+**Location**: `frontend/src/services/queries.ts:116-123`
+
+---
+
+## Development Best Practices
+
+### Backend Development
+
+1. **Database Migrations**: Always use Alembic for schema changes
+   ```bash
+   alembic revision --autogenerate -m "description"
+   alembic upgrade head
+   ```
+
+2. **API Response Format**: Manually construct responses for complex types to avoid serialization issues
+   ```python
+   return DeliveryResponse(
+       id=new_delivery.id,
+       attachments=new_delivery.attachments or [],  # Ensure default value
+       ...
+   )
+   ```
+
+3. **JSON Column Handling**: Always convert Pydantic models to dicts before storing in JSON columns
+
+### Frontend Development
+
+1. **Form Validation**: Use React Hook Form with proper type definitions
+   - Use `valueAsNumber: true` for numeric select fields
+   - Avoid `render` prop when simple `register` works
+   - Register fields before the component that uses them
+
+2. **API Client Type Safety**: Keep TypeScript types in sync with backend schemas
+   - Update `api.ts` when backend changes
+   - Update `queries.ts` mutation types when adding new fields
+
+3. **Debug Logging**: Add console logs for complex form submissions
+   ```typescript
+   console.log('📝 表单数据:', data)
+   console.log('🚀 提交数据:', payload)
+   ```
+
+### Testing Workflow
+
+1. **Backend Testing**:
+   ```bash
+   # Test API endpoints with curl
+   curl -X POST http://localhost:8000/api/v1/deliveries/ \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d @/tmp/test_payload.json
+   ```
+
+2. **Database Verification**:
+   ```bash
+   sqlite3 backend/nexus.db "SELECT * FROM deliveries WHERE id=3;"
+   ```
+
+3. **Frontend Testing**:
+   - Open browser console (F12)
+   - Look for network errors in Network tab
+   - Check console logs for form data
+
+---
+
+## File Structure Reference
+
+```
+Project Nexus/
+├── backend/
+│   ├── app/
+│   │   ├── api/v1/          # API endpoints
+│   │   │   ├── auth.py      # Authentication
+│   │   │   ├── projects.py  # Project CRUD
+│   │   │   ├── modules.py   # Module management
+│   │   │   └── deliveries.py # Delivery submission
+│   │   ├── core/
+│   │   │   ├── deps.py      # Dependencies (auth, DB)
+│   │   │   └── security.py  # JWT, password hashing
+│   │   ├── models/          # SQLAlchemy models
+│   │   ├── schemas/         # Pydantic schemas
+│   │   └── db/session.py    # Database connection
+│   ├── alembic/             # Database migrations
+│   └── nexus.db            # SQLite database (dev)
+│
+└── frontend/
+    ├── src/
+    │   ├── components/      # React components
+    │   │   ├── ui/         # Reusable UI components
+    │   │   ├── auth/       # Auth-related components
+    │   │   └── modules/    # Module-related components
+    │   ├── pages/          # Page components
+    │   ├── services/
+    │   │   ├── api.ts      # Axios API client
+    │   │   └── queries.ts  # React Query hooks
+    │   └── store/
+    │       └── authStore.ts # Zustand auth state
+```
+
+---
+
+## Next Steps (Phase 1 Continuation)
+
+1. **Acceptance/Review Flow**
+   - Commander reviews deliveries
+   - Three outcomes: Pass, Reject, Close
+   - Score allocation for multi-person modules
+
+2. **Delivery Display in UI**
+   - Show submitted attachments in module details
+   - Format attachment links with names
+   - Display review decisions
+
+3. **Abandon Request Feature**
+   - Nodes can request to abandon tasks
+   - Commander approval workflow
+   - Task reassignment logic
+
+4. **Reputation System UI**
+   - Leaderboard page
+   - Reputation history display
+   - Score change notifications

@@ -1,6 +1,28 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
+
+
+class ModuleAssigneeInfo(BaseModel):
+    id: int
+    user_id: int
+    username: str
+    role: str
+    allocated_score: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DeliveryInfo(BaseModel):
+    id: int
+    content: Optional[str] = None
+    submitter_name: str
+    review_decision: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 
 class ModuleBase(BaseModel):
@@ -22,13 +44,20 @@ class ModuleUpdate(BaseModel):
     status: Optional[str] = None
 
 
-class ModuleResponse(ModuleBase):
+class ModuleResponse(BaseModel):
     id: int
     project_id: int
+    project_name: Optional[str] = None
     status: str
     is_timeout: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
+    title: str
+    description: str
+    deadline: Optional[datetime] = None
+    bounty: Optional[float] = None
+    assignees: List[ModuleAssigneeInfo] = []
+    deliveries: List[DeliveryInfo] = []
 
     class Config:
         from_attributes = True

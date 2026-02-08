@@ -115,4 +115,60 @@ export const modulesApi = {
   },
 }
 
+// Deliveries API
+export const deliveriesApi = {
+  submit: async (data: {
+    module_id: number
+    content: string
+    attachment_url?: string
+    attachments?: Array<{ name: string; url: string }>
+  }): Promise<any> => {
+    const response = await api.post('/api/v1/deliveries/', data)
+    return response.data
+  },
+
+  list: async (moduleId: number): Promise<any[]> => {
+    const response = await api.get(`/api/v1/deliveries/${moduleId}`)
+    return response.data
+  },
+
+  get: async (deliveryId: number): Promise<any> => {
+    const response = await api.get(`/api/v1/deliveries/${deliveryId}`)
+    return response.data
+  },
+}
+
+// Reviews API
+export const reviewsApi = {
+  create: async (data: { delivery_id: number; decision: string; feedback?: string; reputation_change?: number }): Promise<any> => {
+    const response = await api.post('/api/v1/reviews/', data)
+    return response.data
+  },
+}
+
+// Notifications API
+export const notificationsApi = {
+  list: async (skip = 0, limit = 50, unreadOnly = false): Promise<any[]> => {
+    const response = await api.get('/api/v1/notifications/', {
+      params: { skip, limit, unread_only: unreadOnly },
+    })
+    return response.data
+  },
+
+  getUnreadCount: async (): Promise<{ unread_count: number }> => {
+    const response = await api.get('/api/v1/notifications/unread-count')
+    return response.data
+  },
+
+  markAsRead: async (notificationId: number): Promise<any> => {
+    const response = await api.post(`/api/v1/notifications/${notificationId}/read`)
+    return response.data
+  },
+
+  markAllAsRead: async (): Promise<any> => {
+    const response = await api.post('/api/v1/notifications/read-all')
+    return response.data
+  },
+}
+
 export default api

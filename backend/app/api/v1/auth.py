@@ -5,6 +5,7 @@ from app.db.session import get_db
 from app.schemas import UserCreate, UserLogin, Token, UserResponse
 from app.models import User
 from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.deps import get_current_user
 
 router = APIRouter()
 
@@ -68,8 +69,7 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_db)):
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """获取当前用户信息"""
-    # This endpoint will be updated to use proper authentication dependency
     from app.core.deps import get_current_user
-    return await get_current_user()
+    return UserResponse.model_validate(current_user)

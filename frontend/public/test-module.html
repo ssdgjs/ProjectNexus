@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试模块创建</title>
+</head>
+<body>
+    <h1>测试模块创建表单</h1>
+    <form id="testForm">
+        <label>项目ID: <input type="number" id="project_id" value="1" required></label><br><br>
+        <label>标题: <input type="text" id="title" value="测试模块" required></label><br><br>
+        <label>描述: <textarea id="description" required>这是一个测试模块</textarea></label><br><br>
+        <label>赏金: <input type="number" id="bounty" value="100"></label><br><br>
+        <button type="submit">创建模块</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 先登录获取token
+            const loginResponse = await fetch('http://localhost:8000/api/v1/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: 'commander',
+                    password: 'admin123'
+                })
+            });
+
+            const loginData = await loginResponse.json();
+            const token = loginData.access_token;
+
+            console.log('Token:', token);
+
+            // 创建模块
+            const moduleData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                project_id: parseInt(document.getElementById('project_id').value),
+                bounty: parseFloat(document.getElementById('bounty').value)
+            };
+
+            console.log('Sending data:', moduleData);
+
+            const createResponse = await fetch('http://localhost:8000/api/v1/modules/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(moduleData)
+            });
+
+            const result = await createResponse.json();
+
+            document.getElementById('result').innerHTML = `
+                <h2>结果:</h2>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+
+            console.log('Create result:', result);
+        });
+    </script>
+</body>
+</html>

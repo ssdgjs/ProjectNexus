@@ -20,11 +20,14 @@ def create_app():
     )
 
     # Include routers
-    from app.api.v1 import auth, projects, modules
+    from app.api.v1 import auth, projects, modules, deliveries, reviews, notifications
 
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["认证"])
     app.include_router(projects.router, prefix="/api/v1/projects", tags=["项目"])
     app.include_router(modules.router, prefix="/api/v1/modules", tags=["模块"])
+    app.include_router(deliveries.router, prefix="/api/v1/deliveries", tags=["交付"])
+    app.include_router(reviews.router, prefix="/api/v1/reviews", tags=["验收"])
+    app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["通知"])
 
     @app.get("/")
     async def root():

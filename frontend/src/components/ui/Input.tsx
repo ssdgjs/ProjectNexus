@@ -4,17 +4,23 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
   helperText?: string
+  render?: (props: any) => React.ReactElement
 }
 
-const Input: React.FC<InputProps> = ({
+const Input = React.forwardRef<HTMLInputElement, InputProps>(({
   label,
   error,
   helperText,
   className = '',
   id,
+  render,
   ...props
-}) => {
+}, ref) => {
   const inputId = id || label?.toLowerCase().replace(/\s/g, '-')
+
+  if (render) {
+    return render({ field: props, id: inputId, error })
+  }
 
   return (
     <div className="w-full">
@@ -24,6 +30,7 @@ const Input: React.FC<InputProps> = ({
         </label>
       )}
       <input
+        ref={ref}
         id={inputId}
         className={`
           w-full px-4 py-2 rounded-lg border
@@ -44,6 +51,8 @@ const Input: React.FC<InputProps> = ({
       )}
     </div>
   )
-}
+})
+
+Input.displayName = 'Input'
 
 export default Input

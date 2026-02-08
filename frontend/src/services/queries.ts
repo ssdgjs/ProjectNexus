@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { authApi, projectsApi, modulesApi } from '@/services/api'
+import { authApi, projectsApi, modulesApi, deliveriesApi, reviewsApi, notificationsApi } from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
 import type { LoginCredentials, RegisterData } from '@/types'
 
@@ -105,6 +105,88 @@ export const useAssignModule = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['modules'] })
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+    },
+  })
+}
+
+// Deliveries hooks
+export const useSubmitDelivery = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      module_id: number
+      content: string
+      attachment_url?: string
+      attachments?: Array<{ name: string; url: string }>
+    }) =>
+      deliveriesApi.submit(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+      queryClient.invalidateQueries({ queryKey: ['deliveries'] })
+    },
+  })
+}
+
+export const useDeliveries = (moduleId: number) => {
+  return useQuery({
+    queryKey: ['deliveries', moduleId],
+    queryFn: () => deliveriesApi.list(moduleId),
+    enabled: !!moduleId,
+  })
+}
+
+// Reviews hooks
+export const useCreateReview = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: reviewsApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+      queryClient.invalidateQueries({ queryKey: ['deliveries'] })
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+    },
+  })
+}
+
+// Notifications hooks
+export const useNotifications = (unreadOnly = false) => {
+  return useQuery({
+    queryKey: ['notifications', unreadOnly],
+    queryFn: () => notificationsApi.list(0, 50, unreadOnly),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  })
+}
+
+export const useUnreadCount = () => {
+  return useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: notificationsApi.getUnreadCount,
+    refetchInterval: 15000, // Refetch every 15 seconds
+  })
+}
+
+export const useMarkAsRead = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: notificationsApi.markAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['unreadCount'] })
+    },
+  })
+}
+
+export const useMarkAllAsRead = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: notificationsApi.markAllAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['unreadCount'] })
     },
   })
 }

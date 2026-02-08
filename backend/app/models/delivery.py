@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Enum, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -19,7 +19,8 @@ class Delivery(Base):
     module_id = Column(Integer, ForeignKey("modules.id"), nullable=False)
     submitter_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)  # 交付内容说明
-    attachment_url = Column(String(500), nullable=True)  # 附件URL
+    attachment_url = Column(String(500), nullable=True)  # 附件URL (单链接，保留兼容)
+    attachments = Column(JSON, nullable=True)  # 多个附件 [{"name": "...", "url": "..."}]
     status = Column(Enum(DeliveryStatus), default=DeliveryStatus.PENDING, nullable=False)
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
 
