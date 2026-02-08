@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useUnreadCount, useNotifications, useMarkAsRead, useMarkAllAsRead } from '@/services/queries'
 import { Avatar, Button } from '@/components/ui'
+import ToastContainer from '@/components/ui/Toast'
 
 const Layout: React.FC = () => {
   const navigate = useNavigate()
@@ -163,6 +164,9 @@ const Layout: React.FC = () => {
       <main className="p-6">
         <Outlet />
       </main>
+
+      {/* Toast Container */}
+      <ToastContainer />
     </div>
   )
 }

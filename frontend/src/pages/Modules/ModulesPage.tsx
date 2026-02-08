@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useModules, useProjects, useCreateModule } from '@/services/queries'
-import { Card, Badge, Button, Modal, Input } from '@/components/ui'
+import { Card, Badge, Button, Modal, Input, EmptyState } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
 import { useForm } from 'react-hook-form'
 
@@ -164,14 +164,20 @@ const ModulesPage: React.FC = () => {
           ))}
         </div>
       ) : (
-        <Card className="text-center py-12">
-          <p className="text-neutral-500 mb-4">暂无模块</p>
-          {isCommander && (
-            <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
-              创建第一个模块
-            </Button>
-          )}
-        </Card>
+        <EmptyState
+          type="no-modules"
+          action={
+            isCommander
+              ? {
+                  label: '创建模块',
+                  onClick: () => setIsCreateModalOpen(true),
+                }
+              : {
+                  label: '浏览所有项目',
+                  onClick: () => navigate('/projects'),
+                }
+          }
+        />
       )}
 
       {/* Create Module Modal */}

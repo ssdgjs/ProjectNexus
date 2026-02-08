@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Modal, Button, Input, Avatar } from '@/components/ui'
 import { useCreateReview } from '@/services/queries'
+import { toast } from '@/store/toastStore'
 
 interface ReviewModalProps {
   isOpen: boolean
@@ -32,6 +33,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   const [selectedDecision, setSelectedDecision] = useState<string>('')
   const [useEqualDistribution, setUseEqualDistribution] = useState(true)
   const [individualScores, setIndividualScores] = useState<Record<number, number>>({})
+  const [showTemplates, setShowTemplates] = useState(false)
 
   const {
     register,
@@ -94,7 +96,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       onClose()
     } catch (error: any) {
       console.error('Failed to create review:', error)
-      alert(error.response?.data?.detail || '验收失败')
+      toast.error('验收失败', error.response?.data?.detail)
     }
   }
 
@@ -123,6 +125,24 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   ]
 
   const isMultiPerson = allAssignees.length > 1
+
+  // 快捷回复模板
+  const feedbackTemplates = {
+    pass: [
+      '完成出色，超出预期！',
+      '符合要求，质量良好',
+      '基本达到验收标准',
+    ],
+    reject: [
+      '代码质量需改进，请参考最佳实践',
+      '功能不完整，缺少：',
+      '文档不充分，需要补充：',
+    ],
+    close: [
+      '需求变更，关闭任务',
+      '技术方案调整，重新派发',
+    ],
+  }
 
   return (
     <Modal
@@ -193,6 +213,24 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             <p className="mt-1 text-sm text-error-500">{errors.decision.message}</p>
           )}
         </div>
+
+        {/* Scoring Guide */}
+        {selectedDecision === 'pass' && (
+          <div className="bg-primary-50 border border-primary-200 p-4 rounded-lg">
+            <h4 className="text-sm font-semibold text-primary-900 mb-2 flex items-center">
+              💡 评分参考
+            </h4>
+            <div className="text-sm text-primary-800 space-y-1">
+              <p>• 承接人数: <strong>{assigneeCount} 人</strong></p>
+              <p>• 建议分数范围：</p>
+              <ul className="ml-4 list-disc space-y-0.5">
+                <li>优秀: 总分的 100%-120%</li>
+                <li>良好: 总分的 80%-99%</li>
+                <li>合格: 总分的 60%-79%</li>
+              </ul>
+            </div>
+          </div>
+        )}
 
         {/* Reputation Change (only for pass) */}
         {selectedDecision === 'pass' && (
@@ -275,21 +313,57 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         )}
 
         {/* Feedback */}
-        <Input
-          label="反馈意见"
-          placeholder="请提供您的反馈..."
-          {...register('feedback', {
-            required: selectedDecision === 'reject' ? '拒绝时必须提供反馈' : false,
-          })}
-          error={errors.feedback?.message}
-          render={({ field }) => (
-            <textarea
-              {...field}
-              rows={4}
-              className="w-full px-4 py-2 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-neutral-700">
+              反馈意见 {selectedDecision === 'reject' && <span className="text-error-500">*</span>}
+            </label>
+            {selectedDecision && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowTemplates(!showTemplates)}
+              >
+                {showTemplates ? '隐藏模板' : '选择模板'}
+              </Button>
+            )}
+          </div>
+
+          {/* Quick Templates */}
+          {showTemplates && selectedDecision && feedbackTemplates[selectedDecision as keyof typeof feedbackTemplates] && (
+            <div className="mb-3 p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
+              <p className="text-xs text-neutral-600 mb-2">点击模板快速填充：</p>
+              <div className="space-y-1">
+                {feedbackTemplates[selectedDecision as keyof typeof feedbackTemplates].map((template, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => {
+                      setValue('feedback', template)
+                      setShowTemplates(false)
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm bg-white border border-neutral-300 rounded hover:bg-primary-50 hover:border-primary-300 transition-colors"
+                  >
+                    {template}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-        />
+
+          <textarea
+            {...register('feedback', {
+              required: selectedDecision === 'reject' ? '拒绝时必须提供反馈' : false,
+            })}
+            placeholder="请提供您的反馈..."
+            rows={4}
+            className="w-full px-4 py-2 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+          {errors.feedback && (
+            <p className="mt-1 text-sm text-error-500">{errors.feedback.message}</p>
+          )}
+        </div>
 
         <div className="flex justify-end space-x-3 pt-4">
           <Button

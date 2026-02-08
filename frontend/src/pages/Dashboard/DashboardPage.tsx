@@ -1,8 +1,9 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useProjects, useModules, useCurrentUser } from '@/services/queries'
+import { useProjects, useModules, useCurrentUser, useAbandonRequests } from '@/services/queries'
 import { Card, Button, Badge } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
+import AbandonRequestReviewCard from '@/components/modules/AbandonRequestReviewCard'
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate()
@@ -10,6 +11,7 @@ const DashboardPage: React.FC = () => {
   const { data: projects } = useProjects()
   const { data: modules } = useModules()
   const { data: currentUser } = useCurrentUser()
+  const { data: abandonRequests, refetch: refetchAbandonRequests } = useAbandonRequests('pending')
 
   const isCommander = user?.role === 'commander'
 
@@ -201,6 +203,33 @@ const DashboardPage: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* Abandon Requests Review - Commander Only */}
+      {isCommander && abandonRequests && abandonRequests.length > 0 && (
+        <Card className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-neutral-900">
+              待审批的放弃申请
+              <Badge variant="warning" className="ml-2">{abandonRequests.length}</Badge>
+            </h3>
+          </div>
+          <div className="space-y-4">
+            {abandonRequests.map((request: any) => (
+              <AbandonRequestReviewCard
+                key={request.id}
+                requestId={request.id}
+                moduleTitle={request.module_title}
+                requesterName={request.requester_name}
+                reason={request.reason}
+                status={request.status}
+                reviewComment={request.review_comment}
+                createdAt={request.created_at}
+                onSuccess={() => refetchAbandonRequests()}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Task Limit Warning */}
       {currentUser && currentUser.concurrent_task_count >= 3 && (

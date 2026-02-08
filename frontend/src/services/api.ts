@@ -171,4 +171,77 @@ export const notificationsApi = {
   },
 }
 
+// Knowledge API
+export const knowledgeApi = {
+  upload: async (data: { title: string; description?: string; file: File }): Promise<any> => {
+    const formData = new FormData()
+    formData.append('file', data.file)
+    const params = new URLSearchParams({ title: data.title })
+    if (data.description) params.append('description', data.description)
+
+    const response = await api.post(`/api/v1/knowledge/?${params.toString()}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  list: async (skip = 0, limit = 50, search?: string, file_type?: string): Promise<any[]> => {
+    const params: any = { skip, limit }
+    if (search) params.search = search
+    if (file_type) params.file_type = file_type
+    const response = await api.get('/api/v1/knowledge/', { params })
+    return response.data
+  },
+
+  get: async (id: number): Promise<any> => {
+    const response = await api.get(`/api/v1/knowledge/${id}`)
+    return response.data
+  },
+
+  delete: async (id: number): Promise<any> => {
+    const response = await api.delete(`/api/v1/knowledge/${id}`)
+    return response.data
+  },
+
+  linkToModule: async (knowledgeId: number, moduleId: number): Promise<any> => {
+    const response = await api.post(`/api/v1/knowledge/${knowledgeId}/link`, { module_id: moduleId })
+    return response.data
+  },
+
+  unlinkFromModule: async (knowledgeId: number, moduleId: number): Promise<any> => {
+    const response = await api.delete(`/api/v1/knowledge/${knowledgeId}/link/${moduleId}`)
+    return response.data
+  },
+
+  getLinkedModules: async (knowledgeId: number): Promise<any[]> => {
+    const response = await api.get(`/api/v1/knowledge/${knowledgeId}/modules`)
+    return response.data
+  },
+
+  getModuleKnowledge: async (moduleId: number): Promise<any[]> => {
+    const response = await api.get(`/api/v1/knowledge/module/${moduleId}`)
+    return response.data
+  },
+}
+
+// Abandon Requests API
+export const abandonRequestsApi = {
+  create: async (data: { module_id: number; reason: string }): Promise<any> => {
+    const response = await api.post('/api/v1/abandon-requests/', data)
+    return response.data
+  },
+
+  list: async (status?: string): Promise<any[]> => {
+    const params: any = {}
+    if (status) params.status = status
+    const response = await api.get('/api/v1/abandon-requests/', { params })
+    return response.data
+  },
+
+  review: async (requestId: number, data: { approve: boolean; comment?: string }): Promise<any> => {
+    const response = await api.post(`/api/v1/abandon-requests/${requestId}/review`, data)
+    return response.data
+  },
+}
+
 export default api

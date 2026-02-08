@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Modal, Button, Input } from '@/components/ui'
 import { useSubmitDelivery } from '@/services/queries'
+import { toast } from '@/store/toastStore'
 
 interface DeliverySubmissionModalProps {
   isOpen: boolean
@@ -86,7 +87,7 @@ const DeliverySubmissionModal: React.FC<DeliverySubmissionModalProps> = ({
     } catch (error: any) {
       console.error('❌ 提交失败:', error)
       console.error('错误详情:', error.response?.data)
-      alert(error.response?.data?.detail || '提交失败，请重试')
+      toast.error('提交失败', error.response?.data?.detail || '请重试')
     }
   }
 

@@ -12,7 +12,9 @@ class NotificationType(str, enum.Enum):
     REVIEW_RESULT = "review_result"  # 验收结果
     MODULE_CLOSED = "module_closed"  # 模块关闭
     MODULE_TIMEOUT = "module_timeout"  # 模块超时
-    ABANDON_REQUEST = "abandon_request"  # 放弃任务申请
+    ABANDON_REQUEST = "abandon_request"  # 放弃任务申请（待审批）
+    ABANDON_APPROVED = "abandon_approved"  # 放弃任务已批准
+    ABANDON_REJECTED = "abandon_rejected"  # 放弃任务被拒绝
     REPUTATION_CHANGE = "reputation_change"  # 信誉分变化
     KNOWLEDGE_UPLOADED = "knowledge_uploaded"  # 新知识上传
 

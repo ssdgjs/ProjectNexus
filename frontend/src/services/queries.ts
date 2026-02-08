@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { authApi, projectsApi, modulesApi, deliveriesApi, reviewsApi, notificationsApi } from '@/services/api'
+import { authApi, projectsApi, modulesApi, deliveriesApi, reviewsApi, notificationsApi, abandonRequestsApi, knowledgeApi } from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
 import type { LoginCredentials, RegisterData } from '@/types'
 
@@ -188,5 +188,122 @@ export const useMarkAllAsRead = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       queryClient.invalidateQueries({ queryKey: ['unreadCount'] })
     },
+  })
+}
+
+// Abandon Requests hooks
+export const useAbandonRequest = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: abandonRequestsApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+export const useAbandonRequests = (status?: string) => {
+  return useQuery({
+    queryKey: ['abandonRequests', status],
+    queryFn: () => abandonRequestsApi.list(status),
+    enabled: true, // 指挥官总是可以查看
+  })
+}
+
+export const useReviewAbandonRequest = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ requestId, approve, comment }: { requestId: number; approve: boolean; comment?: string }) => {
+      return abandonRequestsApi.review(requestId, { approve, comment })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['abandonRequests'] })
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+// Knowledge hooks
+export const useKnowledge = (skip = 0, limit = 50, search?: string, fileType?: string) => {
+  return useQuery({
+    queryKey: ['knowledge', skip, limit, search, fileType],
+    queryFn: () => knowledgeApi.list(skip, limit, search, fileType),
+  })
+}
+
+export const useKnowledgeItem = (id: number) => {
+  return useQuery({
+    queryKey: ['knowledge', id],
+    queryFn: () => knowledgeApi.get(id),
+    enabled: !!id,
+  })
+}
+
+export const useUploadKnowledge = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: knowledgeApi.upload,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] })
+    },
+  })
+}
+
+export const useDeleteKnowledge = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: knowledgeApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] })
+    },
+  })
+}
+
+export const useLinkKnowledge = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ knowledgeId, moduleId }: { knowledgeId: number; moduleId: number }) =>
+      knowledgeApi.linkToModule(knowledgeId, moduleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] })
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+    },
+  })
+}
+
+export const useUnlinkKnowledge = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ knowledgeId, moduleId }: { knowledgeId: number; moduleId: number }) =>
+      knowledgeApi.unlinkFromModule(knowledgeId, moduleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] })
+      queryClient.invalidateQueries({ queryKey: ['modules'] })
+    },
+  })
+}
+
+export const useKnowledgeLinkedModules = (knowledgeId: number) => {
+  return useQuery({
+    queryKey: ['knowledgeModules', knowledgeId],
+    queryFn: () => knowledgeApi.getLinkedModules(knowledgeId),
+    enabled: !!knowledgeId,
+  })
+}
+
+export const useModuleKnowledge = (moduleId: number) => {
+  return useQuery({
+    queryKey: ['moduleKnowledge', moduleId],
+    queryFn: () => knowledgeApi.getModuleKnowledge(moduleId),
+    enabled: !!moduleId,
   })
 }

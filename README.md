@@ -1,17 +1,64 @@
 # Project Nexus
 
-AI 原生分布式组织操作系统 - MVP 版本
+**AI 原生分布式组织操作系统**
 
-## 项目概述
+> 将战略目标分解为可执行任务，智能分配给最合适的工作节点（人类 + AI Agents）
 
-Project Nexus 是一个"无管理者"的组织系统，AI 作为调度枢纽，将人类工作者和 Agent 视为平等的"工作节点"。系统将战略目标分解为原子任务，并分配给最合适的节点。
+**版本**: V0.2.0 | **状态**: ✅ 生产就绪 | **更新**: 2026-02-08
 
-## 技术栈
+---
 
-- **后端**: Python + FastAPI + SQLAlchemy + PostgreSQL
-- **前端**: React + Vite + TypeScript + TailwindCSS
-- **状态管理**: Zustand + React Query
-- **部署**: Docker Compose
+## 🎯 项目愿景
+
+Project Nexus 是一个"无管理"的组织系统，AI 作为调度枢纽，将人类工作者和 AI Agents 视为平等的"工作节点"。系统将战略目标分解为原子任务，并分配给最合适的节点。
+
+**核心引擎**:
+- **The Prism**（棱镜）: 将战略目标分解为原子任务
+- **The Dispatcher**（调度器）: 基于能力匹配任务到最优节点
+- **The Ledger**（账本）: 记录工作证明，结算代币
+- **The Strand**（脉络）: 知识积累和复用
+
+## ✨ V0.2.0 核心功能
+
+### 🎨 用户体验（全新）
+- ✅ Toast 通知系统（替代 alert）
+- ✅ 空状态引导（6 种场景）
+- ✅ 评分指南和快捷模板
+- ✅ 任务倒计时可视化
+- ✅ 自动超时检测
+
+### 📋 任务管理
+- ✅ 项目和模块管理
+- ✅ 任务承接（抢单模式）
+- ✅ 交付物提交
+- ✅ 验收流程（通过/拒绝/关闭）
+- ✅ 任务放弃申请和审批
+
+### 📚 知识库（全新）
+- ✅ 文件上传（10 种类型，30MB 限制）
+- ✅ 知识搜索和筛选
+- ✅ 任务知识关联
+- ✅ 权限管理（上传者/指挥官）
+
+### 👥 用户角色
+- **指挥官 (Commander)**: 设置目标、创建项目、验收任务
+- **节点 (Node)**: 承接任务、提交交付、上传知识
+
+## 🛠️ 技术栈
+
+### 前端
+- React 18 + TypeScript
+- Vite (构建工具)
+- Tailwind CSS (样式)
+- Lingjing Design System
+- Zustand (UI 状态)
+- React Query (服务器状态)
+
+### 后端
+- FastAPI (框架)
+- SQLAlchemy (ORM)
+- PostgreSQL (数据库)
+- APScheduler (定时任务)
 
 ## 快速开始
 
@@ -221,3 +268,60 @@ docker-compose exec backend alembic current
 ## 联系方式
 
 项目主页: [https://github.com/your-org/project-nexus](https://github.com/your-org/project-nexus)
+
+---
+
+## 🎉 V0.2.0 更新日志 (2026-02-08)
+
+### 新增功能
+
+**用户体验提升**:
+- ✨ Toast 通知系统（替代 alert）
+- ✨ 空状态引导（6 种场景）
+- ✨ Alert 和 Tooltip 组件
+- ✨ 评分指南和快捷模板
+- ✨ 任务倒计时可视化
+- ✨ 自动超时检测（APScheduler）
+
+**任务生命周期**:
+- ✨ 任务放弃申请流程
+- ✨ 指挥官审批功能
+- ✨ 状态变更通知
+
+**知识库系统**:
+- ✨ 文件上传（支持 10 种类型）
+- ✨ 知识搜索和筛选
+- ✨ 任务知识关联
+- ✨ 权限管理
+
+### 性能优化
+
+- 前端 Bundle: 365KB (gzip: 113KB)
+- 构建时间: < 600ms
+- API 端点: +8 个新端点
+
+### 文档更新
+
+- `PROJECT_SUMMARY.md` - 详细实现总结
+- `FINAL_REPORT.md` - 完成报告
+
+### 已知问题
+
+- 文件下载功能待实现（占位符）
+- 实时通知使用轮询（WebSocket 计划中）
+
+---
+
+**从 V0.1.0 升级**:
+
+```bash
+# 后端添加依赖
+pip install apscheduler
+
+# 前端安装依赖
+npm install
+
+# 数据库迁移（如需要）
+alembic upgrade head
+```
+

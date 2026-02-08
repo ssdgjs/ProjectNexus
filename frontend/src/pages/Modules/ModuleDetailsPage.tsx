@@ -1,10 +1,14 @@
 import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useModule, useAssignModule, useCurrentUser, useDeliveries } from '@/services/queries'
-import { Card, Badge, Button, Avatar } from '@/components/ui'
+import { useModule, useAssignModule, useCurrentUser, useDeliveries, useModuleKnowledge } from '@/services/queries'
+import { Card, Badge, Button, Avatar, EmptyState } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
+import { toast } from '@/store/toastStore'
+import CountdownCard from '@/components/modules/CountdownCard'
 import DeliverySubmissionModal from '@/components/modules/DeliverySubmissionModal'
 import ReviewModal from '@/components/modules/ReviewModal'
+import AbandonRequestModal from '@/components/modules/AbandonRequestModal'
+import SelectKnowledgeModal from '@/components/knowledge/SelectKnowledgeModal'
 
 const ModuleDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -13,9 +17,12 @@ const ModuleDetailsPage: React.FC = () => {
   const { data: module, isLoading, refetch } = useModule(Number(id))
   const { data: currentUser } = useCurrentUser()
   const { data: deliveries } = useDeliveries(Number(id))
+  const { data: linkedKnowledge } = useModuleKnowledge(Number(id))
   const assignModule = useAssignModule()
 
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false)
+  const [isAbandonModalOpen, setIsAbandonModalOpen] = useState(false)
+  const [isLinkKnowledgeModalOpen, setIsLinkKnowledgeModalOpen] = useState(false)
   const [reviewModalData, setReviewModalData] = useState<{
     isOpen: boolean
     deliveryId: number
@@ -37,7 +44,7 @@ const ModuleDetailsPage: React.FC = () => {
       refetch()
     } catch (error: any) {
       console.error('Failed to assign module:', error)
-      alert(error.response?.data?.detail || '承接失败')
+      toast.error('承接失败', error.response?.data?.detail)
     }
   }
 
@@ -127,19 +134,29 @@ const ModuleDetailsPage: React.FC = () => {
         </div>
 
         {isAssignee && !myDelivery && (
-          <div className="mb-4 flex items-center space-x-3">
+          <div className="mb-4 flex items-center justify-between">
             <div className="flex-1 p-3 bg-success-50 border border-success-200 rounded-lg">
               <p className="text-sm text-success-700">
                 ✓ 您已承接此任务
               </p>
             </div>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => setIsDeliveryModalOpen(true)}
-            >
-              提交交付
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsAbandonModalOpen(true)}
+                disabled={module.status !== 'in_progress'}
+              >
+                申请放弃
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => setIsDeliveryModalOpen(true)}
+              >
+                提交交付
+              </Button>
+            </div>
           </div>
         )}
 
@@ -170,14 +187,7 @@ const ModuleDetailsPage: React.FC = () => {
               {module.bounty || 0} 分
             </p>
           </div>
-          <div className="p-4 bg-neutral-50 rounded-lg">
-            <p className="text-sm text-neutral-500 mb-1">截止日期</p>
-            <p className="text-2xl font-bold text-neutral-900">
-              {module.deadline
-                ? new Date(module.deadline).toLocaleDateString('zh-CN')
-                : '无限制'}
-            </p>
-          </div>
+          <CountdownCard deadline={module.deadline} isTimeout={module.is_timeout} size="md" />
           <div className="p-4 bg-neutral-50 rounded-lg">
             <p className="text-sm text-neutral-500 mb-1">承接人数</p>
             <p className="text-2xl font-bold text-neutral-900">
@@ -190,7 +200,7 @@ const ModuleDetailsPage: React.FC = () => {
         </div>
 
         {/* Assignees */}
-        {module.assignees && module.assignees.length > 0 && (
+        {module.assignees && module.assignees.length > 0 ? (
           <div className="border-t border-neutral-200 pt-6">
             <h3 className="text-lg font-semibold text-neutral-900 mb-3">承接人</h3>
             <div className="flex flex-wrap gap-3">
@@ -210,6 +220,10 @@ const ModuleDetailsPage: React.FC = () => {
               ))}
             </div>
           </div>
+        ) : (
+          <div className="border-t border-neutral-200 pt-6">
+            <EmptyState type="no-assignees" />
+          </div>
         )}
       </Card>
 
@@ -228,6 +242,63 @@ const ModuleDetailsPage: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
+      </Card>
+
+      {/* Linked Knowledge */}
+      <Card className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-neutral-900">关联知识</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsLinkKnowledgeModalOpen(true)}
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            添加知识
+          </Button>
+        </div>
+
+        {linkedKnowledge && linkedKnowledge.length > 0 ? (
+          <div className="space-y-3">
+            {linkedKnowledge.map((knowledge: any) => (
+              <div
+                key={knowledge.id}
+                className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
+              >
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="text-2xl">
+                    {knowledge.file_name.endsWith('.zip') ? '📦' :
+                     knowledge.file_name.endsWith('.pdf') ? '📕' :
+                     knowledge.file_name.endsWith('.md') ? '📄' :
+                     knowledge.file_name.match(/\.(png|jpg|jpeg|gif)$/i) ? '🖼️' : '📎'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-neutral-900 truncate">{knowledge.title}</p>
+                    <p className="text-xs text-neutral-500 truncate">{knowledge.file_name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-neutral-500">
+                    {(knowledge.file_size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(`/api/v1/knowledge/${knowledge.id}/download`, '_blank')}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState type="no-linked-knowledge" />
+        )}
       </Card>
 
       {/* Deliveries */}
@@ -287,7 +358,7 @@ const ModuleDetailsPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <p className="text-neutral-500 text-center py-8">暂无交付记录</p>
+          <EmptyState type="no-deliveries" />
         )}
       </Card>
 
@@ -307,6 +378,24 @@ const ModuleDetailsPage: React.FC = () => {
         submitterName={reviewModalData.submitterName}
         moduleTitle={module?.title || ''}
         allAssignees={module?.assignees || []}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Abandon Request Modal */}
+      <AbandonRequestModal
+        isOpen={isAbandonModalOpen}
+        onClose={() => setIsAbandonModalOpen(false)}
+        moduleId={Number(id)}
+        moduleTitle={module?.title || ''}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Link Knowledge Modal */}
+      <SelectKnowledgeModal
+        isOpen={isLinkKnowledgeModalOpen}
+        onClose={() => setIsLinkKnowledgeModalOpen(false)}
+        moduleId={Number(id)}
+        moduleTitle={module?.title || ''}
         onSuccess={() => refetch()}
       />
     </div>
