@@ -29,18 +29,21 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 10080
-    ports:
-      - "8000:8000"
     volumes:
-      - ./backend/uploads:/app/uploads
+      - uploads_data:/app/uploads
     depends_on:
       db:
         condition: service_healthy
     restart: always
     command: >
       sh -c "
-        echo 'Waiting for database...' &&
-        sleep 10 &&
+        echo 'Waiting for database to be ready...' &&
+        while ! nc -z db 5432; do
+          echo 'Database not ready yet, waiting...' &&
+          sleep 3;
+        done &&
+        echo 'Database is ready!' &&
+        sleep 5 &&
         echo 'Running migrations...' &&
         alembic upgrade head &&
         echo 'Starting server...' &&
@@ -48,6 +51,7 @@ services:
       "
     networks:
       - nexus_network
+    # 不暴露端口到主机，通过 Nginx 代理访问
 
   frontend:
     image: nginx:alpine
@@ -65,6 +69,7 @@ services:
 
 volumes:
   postgres_data_prod:
+  uploads_data:
 
 networks:
   nexus_network:

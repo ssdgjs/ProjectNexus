@@ -51,6 +51,7 @@ async def create_module(
         title=module_data.title,
         description=module_data.description,
         project_id=module_data.project_id,
+        creator_id=current_user.id,
         deadline=module_data.deadline,
         bounty=module_data.bounty,
         status="open"
@@ -114,6 +115,10 @@ async def _get_module_response(module: Module, db: AsyncSession) -> ModuleRespon
     project_result = await db.execute(select(Project).where(Project.id == module.project_id))
     project = project_result.scalar_one_or_none()
 
+    # Get creator name
+    creator_result = await db.execute(select(User).where(User.id == module.creator_id))
+    creator = creator_result.scalar_one_or_none()
+
     # Get assignees
     assignees_result = await db.execute(
         select(ModuleAssignee, User)
@@ -126,7 +131,7 @@ async def _get_module_response(module: Module, db: AsyncSession) -> ModuleRespon
     deliveries_result = await db.execute(
         select(Delivery, Review, User)
         .outerjoin(Review, Delivery.id == Review.delivery_id)
-        .join(User, Delivery.submitter_id == User.id)
+        .join(User, Delivery.assignee_id == User.id)
         .where(Delivery.module_id == module.id)
     )
     deliveries_data = deliveries_result.all()
@@ -139,7 +144,7 @@ async def _get_module_response(module: Module, db: AsyncSession) -> ModuleRespon
             user_id=assignee.user_id,
             username=user.username,
             role=user.role,
-            allocated_score=assignee.allocated_score
+            score_share=assignee.score_share
         )
         for assignee, user in assignees_data
     ]
@@ -159,6 +164,8 @@ async def _get_module_response(module: Module, db: AsyncSession) -> ModuleRespon
         id=module.id,
         project_id=module.project_id,
         project_name=project.name if project else None,
+        creator_id=module.creator_id,
+        creator_name=creator.username if creator else None,
         status=module.status,
         is_timeout=module.is_timeout,
         created_at=module.created_at,
@@ -234,10 +241,29 @@ async def assign_module(
     # 更新用户任务计数
     current_user.concurrent_task_count += 1
 
-    # 更新模块状态
-    module.status = "in_progress"
+    # 注意：不在承接时改变模块状态，允许多人承接（最多5人）
+    # 模块状态由指挥官手动控制或通过验收流程改变
 
     db.add(new_assign)
+
+    # 发送通知给指挥官
+    from app.models.notification import Notification, NotificationType
+    # 查找所有指挥官
+    commanders_result = await db.execute(
+        select(User).where(func.lower(User.role) == "commander")
+    )
+    commanders = commanders_result.scalars().all()
+
+    for commander in commanders:
+        notification = Notification(
+            recipient_id=commander.id,
+            type=NotificationType.MODULE_ASSIGNED,
+            title=f"任务已被承接",
+            content=f"节点「{current_user.username}」已承接任务「{module.title}」",
+            related_module_id=module_id
+        )
+        db.add(notification)
+
     await db.commit()
 
     return {"message": "承接成功"}

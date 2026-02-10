@@ -68,7 +68,7 @@ const AbandonRequestReviewCard: React.FC<AbandonRequestReviewCardProps> = ({
           </p>
         </div>
 
-        {/* 模块信息 */}
+        {/* 任务信息 */}
         <div className="mb-3">
           <h4 className="text-sm font-medium text-neutral-700 mb-1">📋 任务信息</h4>
           <p className="text-base font-semibold text-neutral-900">{moduleTitle}</p>

@@ -36,7 +36,7 @@ const ModulesPage: React.FC = () => {
     },
   })
 
-  const isCommander = user?.role === 'commander'
+  const isCommander = user?.role?.toLowerCase() === 'commander'
 
   const handleCreateModule = async (data: CreateModuleForm) => {
     try {
@@ -86,7 +86,7 @@ const ModulesPage: React.FC = () => {
         </div>
         {isCommander && (
           <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
-            创建模块
+            创建任务
           </Button>
         )}
       </div>
@@ -169,7 +169,7 @@ const ModulesPage: React.FC = () => {
           action={
             isCommander
               ? {
-                  label: '创建模块',
+                  label: '创建任务',
                   onClick: () => setIsCreateModalOpen(true),
                 }
               : {
@@ -187,7 +187,7 @@ const ModulesPage: React.FC = () => {
           setIsCreateModalOpen(false)
           reset()
         }}
-        title="创建模块"
+        title="创建任务"
         size="lg"
       >
         <form onSubmit={handleSubmit(handleCreateModule)} className="space-y-4">
@@ -215,23 +215,23 @@ const ModulesPage: React.FC = () => {
           </div>
 
           <Input
-            label="模块标题"
-            placeholder="输入模块标题"
+            label="任务标题"
+            placeholder="输入任务标题"
             error={errors.title?.message}
-            {...register('title', { required: '请输入模块标题' })}
+            {...register('title', { required: '请输入任务标题' })}
           />
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
-              模块描述
+              任务描述
             </label>
             <textarea
-              {...register('description', { required: '请输入模块描述' })}
+              {...register('description', { required: '请输入任务描述' })}
               rows={4}
               className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200 ${
                 errors.description ? 'border-error-500 text-error-900' : 'border-neutral-300 text-neutral-900'
               }`}
-              placeholder="输入模块描述"
+              placeholder="输入任务描述"
             />
             {errors.description && (
               <p className="mt-1 text-sm text-error-500">{errors.description.message}</p>

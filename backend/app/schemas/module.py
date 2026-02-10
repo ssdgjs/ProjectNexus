@@ -8,7 +8,7 @@ class ModuleAssigneeInfo(BaseModel):
     user_id: int
     username: str
     role: str
-    allocated_score: Optional[float] = None
+    score_share: int = 100
 
     class Config:
         from_attributes = True
@@ -48,6 +48,8 @@ class ModuleResponse(BaseModel):
     id: int
     project_id: int
     project_name: Optional[str] = None
+    creator_id: int
+    creator_name: Optional[str] = None
     status: str
     is_timeout: bool
     created_at: datetime

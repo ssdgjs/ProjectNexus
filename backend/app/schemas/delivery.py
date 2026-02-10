@@ -10,7 +10,6 @@ class AttachmentItem(BaseModel):
 
 class DeliveryBase(BaseModel):
     content: str
-    attachment_url: Optional[str] = None  # 保留用于兼容
     attachments: Optional[List[AttachmentItem]] = Field(default_factory=list, description="附件列表")
 
 
@@ -21,8 +20,7 @@ class DeliveryCreate(DeliveryBase):
 class DeliveryResponse(DeliveryBase):
     id: int
     module_id: int
-    submitter_id: int
-    status: str
+    assignee_id: int
     submitted_at: datetime
     attachments: List[AttachmentItem] = Field(default_factory=list)
 

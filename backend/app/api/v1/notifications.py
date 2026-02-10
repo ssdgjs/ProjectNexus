@@ -31,7 +31,7 @@ async def get_notifications(
     return [
         {
             "id": n.id,
-            "type": n.type.value,
+            "type": n.type,
             "title": n.title,
             "content": n.content,
             "is_read": n.is_read,

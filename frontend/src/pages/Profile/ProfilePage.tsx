@@ -45,9 +45,9 @@ const ProfilePage: React.FC = () => {
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
               <h2 className="text-2xl font-bold text-neutral-900">{user?.username}</h2>
-              <Badge variant={user?.role === 'commander' ? 'success' : 'neutral'}>
-                {user?.role === 'commander' ? '指挥官' : '节点'}
-              </Badge>
+              {user?.role?.toLowerCase() === 'commander' && (
+                <Badge variant="success">指挥官</Badge>
+              )}
             </div>
             <p className="text-neutral-600">信誉分: <span className="font-bold text-primary-500 text-xl">{stats.totalScore}</span></p>
           </div>
@@ -58,7 +58,7 @@ const ProfilePage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>
           <div className="text-center">
-            <p className="text-sm text-neutral-600 mb-2">参与模块</p>
+            <p className="text-sm text-neutral-600 mb-2">参与任务</p>
             <p className="text-3xl font-bold text-neutral-900">{stats.totalModules}</p>
           </div>
         </Card>
@@ -78,7 +78,7 @@ const ProfilePage: React.FC = () => {
 
       {/* My Modules */}
       <Card>
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">我的模块</h3>
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">我的任务</h3>
         {myModules.length > 0 ? (
           <div className="space-y-3">
             {myModules.map((module: any) => (

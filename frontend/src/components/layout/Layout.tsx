@@ -58,7 +58,7 @@ const Layout: React.FC = () => {
                 项目
               </Link>
               <Link to="/modules" className="text-neutral-700 hover:text-primary-500 transition-colors">
-                模块
+                任务
               </Link>
               <Link to="/knowledge" className="text-neutral-700 hover:text-primary-500 transition-colors">
                 知识库
@@ -142,7 +142,7 @@ const Layout: React.FC = () => {
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-neutral-900">{user?.username}</p>
                 <p className="text-xs text-neutral-500">
-                  {user?.role === 'commander' ? '指挥官' : '节点'}
+                  {user?.role?.toLowerCase() === 'commander' ? '指挥官' : ''}
                 </p>
               </div>
               <Avatar name={user?.username} size="md" />

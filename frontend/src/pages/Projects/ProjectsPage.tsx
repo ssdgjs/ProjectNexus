@@ -25,7 +25,7 @@ const ProjectsPage: React.FC = () => {
     reset,
   } = useForm<CreateProjectForm>()
 
-  const isCommander = user?.role === 'commander'
+  const isCommander = user?.role?.toLowerCase() === 'commander'
 
   const handleCreateProject = async (data: CreateProjectForm) => {
     try {

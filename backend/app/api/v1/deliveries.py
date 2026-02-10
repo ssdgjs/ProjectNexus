@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import List
 from app.db.session import get_db
 from app.schemas import DeliveryCreate, DeliveryResponse
@@ -46,7 +46,7 @@ async def submit_delivery(
     existing_delivery = await db.execute(
         select(Delivery).where(
             Delivery.module_id == delivery_data.module_id,
-            Delivery.submitter_id == current_user.id
+            Delivery.assignee_id == current_user.id
         )
     )
     if existing_delivery.scalar_one_or_none():
@@ -66,26 +66,42 @@ async def submit_delivery(
 
     new_delivery = Delivery(
         module_id=delivery_data.module_id,
-        submitter_id=current_user.id,
+        assignee_id=current_user.id,
         content=delivery_data.content,
-        attachment_url=delivery_data.attachment_url,
-        attachments=attachments_data,
-        status="pending"
+        attachments=attachments_data
     )
 
     db.add(new_delivery)
     await db.commit()
     await db.refresh(new_delivery)
 
+    # 发送通知给指挥官
+    from app.models.notification import Notification, NotificationType
+    # 查找所有指挥官
+    commanders_result = await db.execute(
+        select(User).where(func.lower(User.role) == "commander")
+    )
+    commanders = commanders_result.scalars().all()
+
+    for commander in commanders:
+        notification = Notification(
+            recipient_id=commander.id,
+            type=NotificationType.DELIVERY_SUBMITTED,
+            title=f"任务已提交交付",
+            content=f"节点「{current_user.username}」已提交任务「{module.title}」的交付物，请及时验收",
+            related_module_id=delivery_data.module_id
+        )
+        db.add(notification)
+
+    await db.commit()
+
     # 手动构建响应，确保 attachments 字段正确处理
     return DeliveryResponse(
         id=new_delivery.id,
         module_id=new_delivery.module_id,
-        submitter_id=new_delivery.submitter_id,
+        assignee_id=new_delivery.assignee_id,
         content=new_delivery.content,
-        attachment_url=new_delivery.attachment_url,
         attachments=new_delivery.attachments or [],
-        status=new_delivery.status,
         submitted_at=new_delivery.submitted_at
     )
 
@@ -117,11 +133,9 @@ async def list_deliveries(
         DeliveryResponse(
             id=d.id,
             module_id=d.module_id,
-            submitter_id=d.submitter_id,
+            assignee_id=d.assignee_id,
             content=d.content,
-            attachment_url=d.attachment_url,
             attachments=d.attachments or [],
-            status=d.status,
             submitted_at=d.submitted_at
         ) for d in deliveries
     ]
@@ -146,10 +160,8 @@ async def get_delivery(
     return DeliveryResponse(
         id=delivery.id,
         module_id=delivery.module_id,
-        submitter_id=delivery.submitter_id,
+        assignee_id=delivery.assignee_id,
         content=delivery.content,
-        attachment_url=delivery.attachment_url,
         attachments=delivery.attachments or [],
-        status=delivery.status,
         submitted_at=delivery.submitted_at
     )

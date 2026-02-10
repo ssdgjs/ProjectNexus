@@ -59,7 +59,7 @@ async def create_review(
     assignee_result = await db.execute(
         select(ModuleAssignee).where(
             ModuleAssignee.module_id == delivery.module_id,
-            ModuleAssignee.user_id == delivery.submitter_id
+            ModuleAssignee.user_id == delivery.assignee_id
         )
     )
     assignee = assignee_result.scalar_one_or_none()

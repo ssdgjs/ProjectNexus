@@ -66,9 +66,9 @@ const LeaderboardPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <Badge variant={user.role === 'commander' ? 'success' : 'neutral'}>
-                        {user.role === 'commander' ? '指挥官' : '节点'}
-                      </Badge>
+                      {user.role?.toLowerCase() === 'commander' && (
+                        <Badge variant="success">指挥官</Badge>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-neutral-600">{user.modules}</td>
                     <td className="py-3 px-4 text-right">

@@ -83,7 +83,7 @@ const KnowledgeCard: React.FC<KnowledgeCardProps> = ({
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
 
-  const canDelete = isOwned || user?.role === 'commander'
+  const canDelete = isOwned || user?.role?.toLowerCase() === 'commander'
 
   return (
     <Card hover className="h-full flex flex-col">

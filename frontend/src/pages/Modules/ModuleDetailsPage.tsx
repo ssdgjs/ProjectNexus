@@ -33,7 +33,7 @@ const ModuleDetailsPage: React.FC = () => {
     submitterName: '',
   })
 
-  const isCommander = user?.role === 'commander'
+  const isCommander = user?.role?.toLowerCase() === 'commander'
   const isAssignee = module?.assignees?.some((a: any) => a.user_id === user?.id)
 
   const myDelivery = deliveries?.find((d: any) => d.submitter_id === user?.id)
@@ -59,9 +59,9 @@ const ModuleDetailsPage: React.FC = () => {
   if (!module) {
     return (
       <div className="text-center py-12">
-        <p className="text-neutral-500 mb-4">模块不存在</p>
+        <p className="text-neutral-500 mb-4">任务不存在</p>
         <Button variant="primary" onClick={() => navigate('/modules')}>
-          返回模块列表
+          返回任务列表
         </Button>
       </div>
     )
@@ -212,9 +212,9 @@ const ModuleDetailsPage: React.FC = () => {
                   <Avatar name={assignee.username} size="sm" />
                   <div>
                     <p className="font-medium text-neutral-900">{assignee.username}</p>
-                    <p className="text-xs text-neutral-500">
-                      {assignee.role === 'commander' ? '指挥官' : '节点'}
-                    </p>
+                    {assignee.role === 'commander' && (
+                      <p className="text-xs text-neutral-500">指挥官</p>
+                    )}
                   </div>
                 </div>
               ))}

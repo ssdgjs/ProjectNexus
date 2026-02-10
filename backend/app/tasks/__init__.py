@@ -9,7 +9,7 @@ from typing import Optional
 import logging
 
 from app.db.session import AsyncSessionLocal
-from app.models.module import Module, ModuleStatus
+from app.models.module import Module
 from app.models.notification import Notification, NotificationType
 from app.models.user import User
 
@@ -30,7 +30,7 @@ async def check_module_timeouts():
                 select(Module).where(
                     Module.deadline < now,
                     Module.is_timeout == False,
-                    Module.status.in_([ModuleStatus.OPEN, ModuleStatus.IN_PROGRESS])
+                    Module.status.in_(['open', 'in_progress'])
                 )
             )
             timeout_modules = result.scalars().all()

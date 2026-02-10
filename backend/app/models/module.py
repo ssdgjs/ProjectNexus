@@ -21,8 +21,9 @@ class Module(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(300), nullable=False)
     description = Column(Text, nullable=False)
-    status = Column(Enum(ModuleStatus), default=ModuleStatus.DRAFT, nullable=False)
+    status = Column(String(20), default="draft", nullable=False)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     deadline = Column(DateTime(timezone=True), nullable=True)
     bounty = Column(Float, nullable=True)  # 赏金/分数
     is_timeout = Column(Boolean, default=False, nullable=False)  # 是否超时
@@ -30,6 +31,7 @@ class Module(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
+    creator = relationship("User", foreign_keys=[creator_id])
     project = relationship("Project", back_populates="modules")
     assignees = relationship("ModuleAssignee", back_populates="module", cascade="all, delete-orphan")
     deliveries = relationship("Delivery", back_populates="module", cascade="all, delete-orphan")

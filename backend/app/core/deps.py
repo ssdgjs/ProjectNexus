@@ -26,7 +26,7 @@ async def get_current_user(
     if payload is None:
         raise credentials_exception
 
-    user_id: int = payload.get("sub")
+    user_id = int(payload.get("sub"))
     if user_id is None:
         raise credentials_exception
 
@@ -41,7 +41,7 @@ async def get_current_user(
 
 async def get_current_commander(current_user: User = Depends(get_current_user)) -> User:
     """验证当前用户是否为指挥官"""
-    if current_user.role != "commander":
+    if current_user.role.lower() != "commander":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="需要指挥官权限"

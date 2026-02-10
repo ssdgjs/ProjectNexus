@@ -13,7 +13,7 @@ const DashboardPage: React.FC = () => {
   const { data: currentUser } = useCurrentUser()
   const { data: abandonRequests, refetch: refetchAbandonRequests } = useAbandonRequests('pending')
 
-  const isCommander = user?.role === 'commander'
+  const isCommander = user?.role?.toLowerCase() === 'commander'
 
   // Calculate stats
   const myModules = modules?.filter((m: any) =>
@@ -36,12 +36,13 @@ const DashboardPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-neutral-900 mb-2">仪表盘</h1>
         <p className="text-neutral-600">
           欢迎回来，{user?.username}！
-          {isCommander ? ' 指挥官' : ' 节点'}
+          {isCommander && ' 指挥官'}
         </p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {!isCommander && (
         <Card hover onClick={() => navigate('/modules')} className="cursor-pointer">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-neutral-600">我的任务</h3>
@@ -54,6 +55,7 @@ const DashboardPage: React.FC = () => {
           <p className="text-3xl font-bold text-neutral-900">{myModules.length}</p>
           <p className="text-xs text-neutral-500 mt-1">当前进行中的任务</p>
         </Card>
+        )}
 
         <Card hover onClick={() => navigate('/modules')} className="cursor-pointer">
           <div className="flex items-center justify-between mb-2">
@@ -81,6 +83,7 @@ const DashboardPage: React.FC = () => {
           <p className="text-xs text-neutral-500 mt-1">活跃项目</p>
         </Card>
 
+        {!isCommander && (
         <Card className="cursor-default">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-neutral-600">信誉分</h3>
@@ -95,13 +98,14 @@ const DashboardPage: React.FC = () => {
           </p>
           <p className="text-xs text-neutral-500 mt-1">当前信誉分数</p>
         </Card>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Modules */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-neutral-900">最新模块</h3>
+            <h3 className="text-lg font-semibold text-neutral-900">最新任务</h3>
             <Button
               variant="ghost"
               size="sm"
@@ -137,7 +141,7 @@ const DashboardPage: React.FC = () => {
                 </div>
               ))
             ) : (
-              <p className="text-neutral-500 text-center py-4">暂无模块</p>
+              <p className="text-neutral-500 text-center py-4">暂无任务</p>
             )}
           </div>
         </Card>
@@ -166,7 +170,7 @@ const DashboardPage: React.FC = () => {
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  创建新模块
+                  创建新任务
                 </Button>
               </>
             )}
@@ -178,7 +182,7 @@ const DashboardPage: React.FC = () => {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              浏览所有模块
+              浏览所有任务
             </Button>
             <Button
               variant="ghost"

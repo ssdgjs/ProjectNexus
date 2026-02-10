@@ -68,7 +68,7 @@ const AbandonRequestModal: React.FC<AbandonRequestModalProps> = ({
           </ul>
         </div>
 
-        {/* 模块信息 */}
+        {/* 任务信息 */}
         <div className="bg-neutral-50 p-3 rounded-lg">
           <p className="text-sm text-neutral-600">
             <span className="font-medium">任务名称：</span>

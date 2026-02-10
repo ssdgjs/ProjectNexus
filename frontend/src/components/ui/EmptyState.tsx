@@ -18,9 +18,9 @@ const EmptyState: React.FC<EmptyStateProps> = ({ type, action }) => {
     },
     'no-modules': {
       icon: '📝',
-      title: '还没有模块',
-      description: '模块是任务的基本单元。拆解项目目标，创建可执行的模块任务。',
-      commanderAction: '创建模块',
+      title: '还没有任务',
+      description: '任务是执行的基本单元。拆解项目目标，创建可执行的任务。',
+      commanderAction: '创建任务',
       nodeAction: '浏览所有项目',
     },
     'no-deliveries': {
@@ -31,7 +31,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ type, action }) => {
     'no-assignees': {
       icon: '👥',
       title: '还没有承接人',
-      description: '模块开放承接中，节点可以主动抢单参与任务。',
+      description: '任务开放承接中，可以主动承接参与任务。',
       actionLabel: action?.label || '立即承接',
     },
     'no-knowledge': {

@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from typing import Optional, List
+from pathlib import Path
 from app.db.session import get_db
 from app.models.knowledge_item import KnowledgeItem
 from app.models.knowledge_link import KnowledgeLink
@@ -54,7 +57,7 @@ async def upload_knowledge(
         file_type=knowledge.file_type,
         uploader_id=knowledge.uploader_id,
         uploader_name=current_user.username,
-        uploaded_at=knowledge.uploaded_at,
+        created_at=knowledge.created_at,
         linked_modules_count=0,
         is_owned=True
     )
@@ -75,8 +78,8 @@ async def list_knowledge(
     支持按标题/描述搜索
     支持按文件类型筛选
     """
-    # Build query
-    query = select(KnowledgeItem)
+    # Build query with eager loading of uploader
+    query = select(KnowledgeItem).options(selectinload(KnowledgeItem.uploader))
 
     # Search filter
     if search:
@@ -91,7 +94,7 @@ async def list_knowledge(
         query = query.where(KnowledgeItem.file_type == file_type)
 
     # Order by upload time (newest first)
-    query = query.order_by(KnowledgeItem.uploaded_at.desc())
+    query = query.order_by(KnowledgeItem.created_at.desc())
 
     # Pagination
     query = query.offset(skip).limit(limit)
@@ -103,7 +106,7 @@ async def list_knowledge(
     for item in items:
         # Count linked modules
         count_query = select(func.count(KnowledgeLink.id)).where(
-            KnowledgeLink.knowledge_item_id == item.id
+            KnowledgeLink.knowledge_id == item.id
         )
         count_result = await db.execute(count_query)
         linked_count = count_result.scalar() or 0
@@ -117,7 +120,7 @@ async def list_knowledge(
             file_type=item.file_type,
             uploader_id=item.uploader_id,
             uploader_name=item.uploader.username if item.uploader else None,
-            uploaded_at=item.uploaded_at,
+            created_at=item.created_at,
             linked_modules_count=linked_count,
             is_owned=item.uploader_id == current_user.id
         ))
@@ -125,14 +128,14 @@ async def list_knowledge(
     return responses
 
 
-@router.get("/{knowledge_id}", response_model=KnowledgeResponse)
+@router.get("/{knowledge_item_id}", response_model=KnowledgeResponse)
 async def get_knowledge(
-    knowledge_id: int,
+    knowledge_item_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """获取知识详情"""
-    query = select(KnowledgeItem).where(KnowledgeItem.id == knowledge_id)
+    query = select(KnowledgeItem).options(selectinload(KnowledgeItem.uploader)).where(KnowledgeItem.id == knowledge_item_id)
     result = await db.execute(query)
     knowledge = result.scalar_one_or_none()
 
@@ -141,7 +144,7 @@ async def get_knowledge(
 
     # Count linked modules
     count_query = select(func.count(KnowledgeLink.id)).where(
-        KnowledgeLink.knowledge_item_id == knowledge_id
+        KnowledgeLink.knowledge_id == knowledge_item_id
     )
     count_result = await db.execute(count_query)
     linked_count = count_result.scalar() or 0
@@ -155,15 +158,46 @@ async def get_knowledge(
         file_type=knowledge.file_type,
         uploader_id=knowledge.uploader_id,
         uploader_name=knowledge.uploader.username if knowledge.uploader else None,
-        uploaded_at=knowledge.uploaded_at,
+        created_at=knowledge.created_at,
         linked_modules_count=linked_count,
         is_owned=knowledge.uploader_id == current_user.id
     )
 
 
-@router.delete("/{knowledge_id}")
+@router.get("/{knowledge_item_id}/download")
+async def download_knowledge(
+    knowledge_item_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    下载知识文件
+
+    所有用户都可以下载知识文件
+    """
+    query = select(KnowledgeItem).where(KnowledgeItem.id == knowledge_item_id)
+    result = await db.execute(query)
+    knowledge = result.scalar_one_or_none()
+
+    if not knowledge:
+        raise HTTPException(status_code=404, detail="知识不存在")
+
+    # Check if file exists
+    file_path = Path(knowledge.file_url)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    # Return file
+    return FileResponse(
+        path=str(file_path),
+        filename=knowledge.file_name,
+        media_type=knowledge.file_type
+    )
+
+
+@router.delete("/{knowledge_item_id}")
 async def delete_knowledge(
-    knowledge_id: int,
+    knowledge_item_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -172,7 +206,7 @@ async def delete_knowledge(
 
     权限：上传者本人或指挥官
     """
-    query = select(KnowledgeItem).where(KnowledgeItem.id == knowledge_id)
+    query = select(KnowledgeItem).where(KnowledgeItem.id == knowledge_item_id)
     result = await db.execute(query)
     knowledge = result.scalar_one_or_none()
 
@@ -193,9 +227,9 @@ async def delete_knowledge(
     return {"message": "知识已删除"}
 
 
-@router.post("/{knowledge_id}/link")
+@router.post("/{knowledge_item_id}/link")
 async def link_knowledge_to_module(
-    knowledge_id: int,
+    knowledge_item_id: int,
     link_data: KnowledgeLinkSchema,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -206,7 +240,7 @@ async def link_knowledge_to_module(
     任何用户都可以将知识关联到任务
     """
     # Verify knowledge exists
-    knowledge_query = select(KnowledgeItem).where(KnowledgeItem.id == knowledge_id)
+    knowledge_query = select(KnowledgeItem).where(KnowledgeItem.id == knowledge_item_id)
     knowledge_result = await db.execute(knowledge_query)
     knowledge = knowledge_result.scalar_one_or_none()
     if not knowledge:
@@ -222,7 +256,7 @@ async def link_knowledge_to_module(
 
     # Check if link already exists
     existing_link_query = select(KnowledgeLink).where(
-        KnowledgeLink.knowledge_item_id == knowledge_id,
+        KnowledgeLink.knowledge_id == knowledge_item_id,
         KnowledgeLink.module_id == link_data.module_id
     )
     existing_link_result = await db.execute(existing_link_query)
@@ -233,7 +267,7 @@ async def link_knowledge_to_module(
 
     # Create link
     new_link = KnowledgeLink(
-        knowledge_item_id=knowledge_id,
+        knowledge_id=knowledge_item_id,
         module_id=link_data.module_id
     )
 
@@ -244,9 +278,9 @@ async def link_knowledge_to_module(
     return {"message": "知识已关联到任务"}
 
 
-@router.delete("/{knowledge_id}/link/{module_id}")
+@router.delete("/{knowledge_item_id}/link/{module_id}")
 async def unlink_knowledge_from_module(
-    knowledge_id: int,
+    knowledge_item_id: int,
     module_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -258,7 +292,7 @@ async def unlink_knowledge_from_module(
     """
     # Verify link exists
     link_query = select(KnowledgeLink).where(
-        KnowledgeLink.knowledge_item_id == knowledge_id,
+        KnowledgeLink.knowledge_id == knowledge_item_id,
         KnowledgeLink.module_id == module_id
     )
     link_result = await db.execute(link_query)
@@ -274,15 +308,15 @@ async def unlink_knowledge_from_module(
     return {"message": "关联已解除"}
 
 
-@router.get("/{knowledge_id}/modules", response_model=List[dict])
+@router.get("/{knowledge_item_id}/modules", response_model=List[dict])
 async def get_knowledge_linked_modules(
-    knowledge_id: int,
+    knowledge_item_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """获取知识关联的所有任务"""
     # Verify knowledge exists
-    knowledge_query = select(KnowledgeItem).where(KnowledgeItem.id == knowledge_id)
+    knowledge_query = select(KnowledgeItem).where(KnowledgeItem.id == knowledge_item_id)
     knowledge_result = await db.execute(knowledge_query)
     knowledge = knowledge_result.scalar_one_or_none()
     if not knowledge:
@@ -291,7 +325,7 @@ async def get_knowledge_linked_modules(
     # Get links with joined modules
     from app.models.module import Module
     links_query = select(KnowledgeLink).where(
-        KnowledgeLink.knowledge_item_id == knowledge_id
+        KnowledgeLink.knowledge_id == knowledge_item_id
     )
     links_result = await db.execute(links_query)
     links = links_result.scalars().all()
@@ -340,15 +374,15 @@ async def get_module_knowledge(
     # Get knowledge items
     result = []
     for link in links:
-        # Get knowledge item for each link
-        item_query = select(KnowledgeItem).where(KnowledgeItem.id == link.knowledge_item_id)
+        # Get knowledge item for each link with eager loading
+        item_query = select(KnowledgeItem).options(selectinload(KnowledgeItem.uploader)).where(KnowledgeItem.id == link.knowledge_id)
         item_result = await db.execute(item_query)
         item = item_result.scalar_one_or_none()
 
         if item:
             # Count linked modules for this item
             count_query = select(func.count(KnowledgeLink.id)).where(
-                KnowledgeLink.knowledge_item_id == item.id
+                KnowledgeLink.knowledge_id == item.id
             )
             count_result = await db.execute(count_query)
             linked_count = count_result.scalar() or 0
@@ -362,7 +396,7 @@ async def get_module_knowledge(
                 file_type=item.file_type,
                 uploader_id=item.uploader_id,
                 uploader_name=item.uploader.username if item.uploader else None,
-                uploaded_at=item.uploaded_at,
+                created_at=item.created_at,
                 linked_modules_count=linked_count,
                 is_owned=item.uploader_id == current_user.id
             ))

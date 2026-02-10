@@ -11,7 +11,7 @@ const ProjectDetailsPage: React.FC = () => {
   const { data: project, isLoading } = useProject(Number(id))
   const { data: modules } = useModules(0, 100, Number(id))
 
-  const isCommander = user?.role === 'commander'
+  const isCommander = user?.role?.toLowerCase() === 'commander'
 
   if (isLoading) {
     return (
@@ -98,19 +98,19 @@ const ProjectDetailsPage: React.FC = () => {
             </>
           )}
           <span>•</span>
-          <span>模块数量: {modules?.length || 0}</span>
+          <span>任务数量: {modules?.length || 0}</span>
         </div>
       </Card>
 
-      {/* Modules Section */}
+      {/* Tasks Section */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-neutral-900">项目模块</h2>
+        <h2 className="text-xl font-semibold text-neutral-900">项目任务</h2>
         {isCommander && (
           <Button
             variant="primary"
             onClick={() => navigate(`/modules/new?project_id=${project.id}`)}
           >
-            创建模块
+            创建任务
           </Button>
         )}
       </div>
@@ -154,13 +154,13 @@ const ProjectDetailsPage: React.FC = () => {
         </div>
       ) : (
         <Card className="text-center py-12">
-          <p className="text-neutral-500 mb-4">暂无模块</p>
+          <p className="text-neutral-500 mb-4">暂无任务</p>
           {isCommander && (
             <Button
               variant="primary"
               onClick={() => navigate(`/modules/new?project_id=${project.id}`)}
             >
-              创建第一个模块
+              创建第一个任务
             </Button>
           )}
         </Card>

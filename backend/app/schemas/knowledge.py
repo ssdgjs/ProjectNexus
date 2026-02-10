@@ -12,7 +12,7 @@ class KnowledgeBase(BaseModel):
     file_type: str
     uploader_id: int
     uploader_name: Optional[str] = None
-    uploaded_at: datetime
+    created_at: datetime
 
 
 class KnowledgeCreate(BaseModel):
