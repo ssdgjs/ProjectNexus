@@ -91,31 +91,26 @@ const ModulesPage: React.FC = () => {
         )}
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center space-x-4 mb-6">
-        <button
-          onClick={() => navigate('/modules')}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            !projectIdParam
-              ? 'bg-primary-500 text-white'
-              : 'bg-white text-neutral-700 hover:bg-neutral-100'
-          }`}
+      {/* Filter */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-neutral-700 mb-2">
+          按项目筛选
+        </label>
+        <select
+          value={projectIdParam || ''}
+          onChange={(e) => {
+            const value = e.target.value
+            navigate(value ? `/modules?project_id=${value}` : '/modules')
+          }}
+          className="w-full md:w-80 px-4 py-2.5 rounded-lg border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 cursor-pointer hover:border-primary-400"
         >
-          全部任务
-        </button>
-        {projects?.slice(0, 5).map((project: any) => (
-          <button
-            key={project.id}
-            onClick={() => navigate(`/modules?project_id=${project.id}`)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              projectIdParam === String(project.id)
-                ? 'bg-primary-500 text-white'
-                : 'bg-white text-neutral-700 hover:bg-neutral-100'
-            }`}
-          >
-            {project.name}
-          </button>
-        ))}
+          <option value="">全部任务</option>
+          {projects?.map((project: any) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Modules Grid */}
