@@ -45,7 +45,7 @@ const LeaderboardPage: React.FC = () => {
                 <th className="text-left py-3 px-4 font-semibold text-neutral-900">排名</th>
                 <th className="text-left py-3 px-4 font-semibold text-neutral-900">用户</th>
                 <th className="text-left py-3 px-4 font-semibold text-neutral-900">角色</th>
-                <th className="text-left py-3 px-4 font-semibold text-neutral-900">完成模块</th>
+                <th className="text-left py-3 px-4 font-semibold text-neutral-900">完成任务</th>
                 <th className="text-right py-3 px-4 font-semibold text-neutral-900">信誉分</th>
               </tr>
             </thead>

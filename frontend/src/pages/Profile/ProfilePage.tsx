@@ -7,7 +7,7 @@ const ProfilePage: React.FC = () => {
   const { user } = useAuthStore()
   const { data: modules } = useModules()
 
-  // 获取用户参与的模块
+  // 获取用户参与的任务
   const myModules = React.useMemo(() => {
     return modules?.filter((m: any) =>
       m.assignees?.some((a: any) => a.user_id === user?.id)
@@ -101,7 +101,7 @@ const ProfilePage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <p className="text-neutral-500 text-center py-8">暂未参与任何模块</p>
+          <p className="text-neutral-500 text-center py-8">暂未参与任何任务</p>
         )}
       </Card>
     </div>

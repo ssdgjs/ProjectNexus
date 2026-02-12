@@ -100,7 +100,7 @@ const ModuleDetailsPage: React.FC = () => {
           </button>
           <div>
             <h1 className="text-3xl font-bold text-neutral-900">{module.title}</h1>
-            <p className="text-neutral-600">模块 ID: {module.id}</p>
+            <p className="text-neutral-600">任务 ID: {module.id}</p>
           </div>
         </div>
         {getModuleStatusBadge(module.status)}

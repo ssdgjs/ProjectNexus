@@ -164,7 +164,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             {isMultiPerson ? allAssignees.map(a => a.username).join(', ') : submitterName}
           </p>
           <p className="text-sm text-neutral-600">
-            <span className="font-medium">模块：</span>{moduleTitle}
+            <span className="font-medium">任务：</span>{moduleTitle}
           </p>
           {isMultiPerson && (
             <p className="text-sm text-neutral-600">

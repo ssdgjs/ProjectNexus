@@ -81,8 +81,8 @@ const ModulesPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900 mb-2">模块管理</h1>
-          <p className="text-neutral-600">浏览和承接任务模块</p>
+          <h1 className="text-3xl font-bold text-neutral-900 mb-2">任务管理</h1>
+          <p className="text-neutral-600">浏览和承接任务</p>
         </div>
         {isCommander && (
           <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
@@ -101,7 +101,7 @@ const ModulesPage: React.FC = () => {
               : 'bg-white text-neutral-700 hover:bg-neutral-100'
           }`}
         >
-          全部模块
+          全部任务
         </button>
         {projects?.slice(0, 5).map((project: any) => (
           <button

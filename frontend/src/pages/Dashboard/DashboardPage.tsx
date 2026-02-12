@@ -22,7 +22,7 @@ const DashboardPage: React.FC = () => {
 
   const openModules = modules?.filter((m: any) => m.status === 'open') || []
 
-  // 获取超时模块
+  // 获取超时任务
   const myTimeoutModules = myModules.filter((m: any) => m.is_timeout)
 
   const recentModules = [...(modules || [])]
@@ -67,7 +67,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
           <p className="text-3xl font-bold text-neutral-900">{openModules.length}</p>
-          <p className="text-xs text-neutral-500 mt-1">开放的模块</p>
+          <p className="text-xs text-neutral-500 mt-1">开放的任务</p>
         </Card>
 
         <Card hover onClick={() => navigate('/projects')} className="cursor-pointer">
