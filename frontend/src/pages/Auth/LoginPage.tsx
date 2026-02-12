@@ -85,13 +85,6 @@ const LoginPage: React.FC = () => {
             </p>
           </div>
         </div>
-
-        {/* Default Account Info */}
-        <div className="mt-6 p-4 bg-neutral-100 rounded-lg">
-          <p className="text-sm text-neutral-600 text-center">
-            默认指挥官账户: <span className="font-mono font-medium">commander</span> / <span className="font-mono font-medium">admin123</span>
-          </p>
-        </div>
       </div>
     </div>
   )
